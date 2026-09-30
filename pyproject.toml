@@ -1,0 +1,45 @@
+[project]
+name = "task-api"
+version = "1.0.0"
+description = "A task tracker REST API built with FastAPI and SQLite."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]>=0.115",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "httpx2>=2.13",  # Starlette's TestClient transport
+    "ruff>=0.8",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/task_api"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# pycodestyle, pyflakes, isort, bugbear, pyupgrade, simplify, bandit (security)
+select = ["E", "F", "I", "B", "UP", "SIM", "S"]
+ignore = ["S101"]  # assert is fine: tests, and one invariant check at import time
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
+
+[tool.ruff.lint.per-file-ignores]
+# SQL strings built only from allow-listed column names and "?" placeholders.
+"src/task_api/repository.py" = ["S608"]
