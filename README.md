@@ -6,9 +6,10 @@
 ![Ruff](https://img.shields.io/badge/lint-ruff-D7FF64)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
-A task tracker REST API: create, update, filter, search, sort and page through tasks,
-plus a stats endpoint with an overdue count. FastAPI handles routing, validation and
-the OpenAPI docs; persistence is plain `sqlite3` behind a small repository class.
+A task tracker REST API. You can create, update, filter, search, sort and page through
+tasks, and a stats endpoint reports an overdue count. FastAPI does the routing,
+validation and OpenAPI docs. For storage I kept to plain `sqlite3` behind a small
+repository class.
 
 ## Endpoints
 
@@ -33,20 +34,25 @@ curl "localhost:8000/tasks?status=todo&sort=priority&limit=10"
 
 ## Design notes
 
-- **Layering**: `models.py` (Pydantic schemas) -> `repository.py` (SQL) -> `main.py`
-  (HTTP). Routes never touch SQL; the repository never touches HTTP.
-- **Dependency injection**: `get_repository` opens one connection per request and always
-  closes it; tests swap `today()` for a fixed date with `app.dependency_overrides`.
-- **SQL injection safety**: every value is a `?` parameter. `ORDER BY` cannot take
-  parameters, so sort keys are validated against an allow-list (`Literal[...]`) and
-  mapped to fixed SQL. `LIKE` wildcards in search text are escaped, so `100%` matches
-  literally.
-- **Validation**: Pydantic rejects unknown fields (`extra="forbid"`), blank titles,
-  bad enums and bad dates with `422` and a field-level error body.
-- **PATCH semantics** use `model_dump(exclude_unset=True)`: omitted fields stay as they
-  are, and an explicit `null` clears a nullable field such as `due_date`.
-- **Schema** has `CHECK` constraints on the enum columns and an index on
-  `(status, due_date)` for the overdue query.
+The code is in three layers: `models.py` (Pydantic schemas), `repository.py` (SQL) and
+`main.py` (HTTP). Routes never touch SQL, and the repository never touches HTTP.
+
+`get_repository` is a FastAPI dependency that opens one connection per request and
+always closes it. The tests use `app.dependency_overrides` to swap `today()` for a
+fixed date.
+
+Every value goes into SQL as a `?` parameter. `ORDER BY` can't take parameters, so sort
+keys are checked against an allow-list (`Literal[...]`) and mapped to fixed SQL. `LIKE`
+wildcards in search text are escaped, so `100%` matches literally.
+
+Pydantic rejects unknown fields (`extra="forbid"`), blank titles, bad enum values and
+bad dates with a `422` and a per-field error body.
+
+PATCH uses `model_dump(exclude_unset=True)`. Fields you leave out stay as they are, and
+an explicit `null` clears a nullable field such as `due_date`.
+
+The schema has `CHECK` constraints on the enum columns and an index on
+`(status, due_date)` for the overdue query.
 
 ## Run it
 
@@ -59,7 +65,7 @@ fastapi dev src/task_api/main.py   # http://localhost:8000/docs
 
 The database file defaults to `tasks.db`; set `TASK_API_DB` to change it.
 
-Quality checks (the same ones CI runs):
+The same checks CI runs:
 
 ```bash
 ruff check . && ruff format --check .

@@ -60,6 +60,8 @@ class TaskUpdate(BaseModel):
         return value.strip() if value else value
 
 
+# A stored task, as the API returns it. Response models get comments, not docstrings,
+# because Pydantic copies a class docstring into the OpenAPI schema.
 class Task(BaseModel):
     id: int
     title: str
@@ -71,6 +73,7 @@ class Task(BaseModel):
     updated_at: datetime
 
 
+# One page of results. total counts every match, not just this page.
 class TaskPage(BaseModel):
     items: list[Task]
     total: int

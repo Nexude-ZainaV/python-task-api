@@ -114,11 +114,13 @@ class TaskRepository:
             params.append(priority)
         if search:
             clauses.append("(title LIKE ? ESCAPE '\\' OR description LIKE ? ESCAPE '\\')")
+            # Escape the LIKE wildcards (and the escape character) so user text matches literally.
             pattern = "%" + search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
             params += [pattern, pattern]
         where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
 
         total = self._db.execute(f"SELECT COUNT(*) FROM tasks {where}", params).fetchone()[0]
+        # id breaks ties, so paging through equal sort values is stable.
         order = SORT_COLUMNS[sort] + (" DESC" if descending else "")
         rows = self._db.execute(
             f"SELECT * FROM tasks {where} ORDER BY {order}, id LIMIT ? OFFSET ?",
@@ -147,9 +149,11 @@ class TaskRepository:
         return cursor.rowcount > 0
 
     def stats(self, today: date) -> dict[str, Any]:
+        # Start every status at 0 so statuses with no tasks still appear.
         counts = dict.fromkeys(Status, 0)
         for row in self._db.execute("SELECT status, COUNT(*) AS n FROM tasks GROUP BY status"):
             counts[Status(row["status"])] = row["n"]
+        # Dates are ISO text, so a string comparison orders them correctly.
         overdue = self._db.execute(
             "SELECT COUNT(*) FROM tasks WHERE status != 'done' AND due_date < ?",
             (today.isoformat(),),

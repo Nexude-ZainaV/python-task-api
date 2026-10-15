@@ -1,4 +1,4 @@
-"""HTTP-level tests for the task endpoints."""
+"""HTTP-level tests for the task endpoints. Run: pytest"""
 
 from __future__ import annotations
 

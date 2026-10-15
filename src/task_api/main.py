@@ -19,6 +19,7 @@ from task_api.repository import SORT_COLUMNS, TaskRepository, connect, init_sche
 DEFAULT_DB_PATH = "tasks.db"
 MAX_PAGE_SIZE = 100
 
+# The public sort keys. The assert fails at import if they drift from the repository's SQL map.
 SortKey = Literal["created_at", "due_date", "priority", "title"]
 assert set(SortKey.__args__) == set(SORT_COLUMNS), "SortKey must list every repository sort column"
 
@@ -37,6 +38,7 @@ def get_repository() -> Iterator[TaskRepository]:
 
 
 def today() -> date:
+    """Today in UTC. It is a dependency so tests can pin the date."""
     return datetime.now(UTC).date()
 
 
@@ -46,6 +48,7 @@ Today = Annotated[date, Depends(today)]
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    # Create the tables once at startup, before the first request.
     connection = connect(database_path())
     try:
         init_schema(connection)
